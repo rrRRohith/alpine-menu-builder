@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alpine.js navigation menu builder</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+        integrity="sha512-dPXYcDub/aeb08c63jRq/k6GaKccl256JQy/AnOq7CAnEZ9FzSL9wSbcZkMp4R26vBsMLFYH4kQ67/bbV8XaCQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+
+<body class="bg-gray-100 text-gray-900 min-h-screen flex items-center justify-center">
+    <div class="container mx-auto p-4">
+        <div class="">
+            <form wire:submit.prevent="save">
+                <div class="grid grid-cols-6 gap-8">
+                    <div class="col-span-6 xl:col-span-6">
+                        <div class="rounded-sm border border-stroke shadow-default mb-7  bg-white">
+                            <div class="border-b border-stroke px-7 py-4">
+                                <h3 class="font-medium text-black">
+                                    Navigation menu
+                                </h3>
+                            </div>
+                            <div class="p-7 pt-0">
+                                <div class="flex flex-wrap -mx-2">
+                                    <div class="w-full md:w-1/2 p-2">
+                                        <div class="mt-2">
+                                            <x-input-label for="title" :value="__('Title')" />
+                                            <x-text-input placeholder="Title" wire:model="form.title" id="title"
+                                                class="mt-1 block w-full" type="text" />
+                                            <x-input-error :messages="$errors->get('form.title')" class="mt-2" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <x-input-label :value="__('Menus')" />
+                                <div x-data="menuComponent()" x-init="updateMenus()">
+                                    <div x-data="{ menus: menus }">
+                                        <template x-for="(menu, index) in menus" :key="menu.key">
+                                            <div>
+                                                <template x-template-outlet="$refs.treeNodeTemplate"
+                                                    x-data="{ menu: menu, parent: null }">
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <template x-ref="treeNodeTemplate">
+                                        <div>
+                                            <div x-data="{ showEdit: false, title: menu.title }"
+                                                class="border rounded p-2 mb-2">
+                                                <div class="flex items-center">
+                                                    <div x-text="title" class="font-normal"></div>
+                                                    <div class="ms-auto flex items-center">
+                                                        <div @click="addNewMenu(menu)"
+                                                            x-data="{ tooltip: 'Add sub menu' }" x-tooltip="tooltip"
+                                                            class="flex items-center cursor-pointer justify-center w-9 h-9 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg toggle-full-view hover:bg-gray-100 hover:text-indigo-700 focus:z-10 focus:ring-2 focus:ring-gray-300 focus:outline-none me-2">
+                                                            <i class="text-xl bi bi-plus"></i>
+                                                        </div>
+                                                        <div @click="menu.editing = !menu.editing"
+                                                            x-data="{ tooltip: 'Edit menu' }" x-tooltip="tooltip"
+                                                            class="flex items-center cursor-pointer justify-center w-9 h-9 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg toggle-full-view hover:bg-gray-100 hover:text-indigo-700 focus:z-10 focus:ring-2 focus:ring-gray-300 focus:outline-none me-2">
+                                                            <i class="text-xl bi bi-pen"></i>
+                                                        </div>
+                                                        <div @click="deleteMenu(menu, parent)"
+                                                            x-data="{ tooltip: 'Delete menu' }" x-tooltip="tooltip"
+                                                            class="flex items-center cursor-pointer justify-center w-9 h-9 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg toggle-full-view hover:bg-gray-100 hover:text-indigo-700 focus:z-10 focus:ring-2 focus:ring-gray-300 focus:outline-none me-2">
+                                                            <i class="text-xl bi bi-trash"></i>
+                                                        </div>
+                                                        <div @click="moveUp(menu, parent)"
+                                                            x-data="{ tooltip: 'Move up' }" x-tooltip="tooltip"
+                                                            class="flex items-center cursor-pointer justify-center w-9 h-9 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg toggle-full-view hover:bg-gray-100 hover:text-indigo-700 focus:z-10 focus:ring-2 focus:ring-gray-300 focus:outline-none me-2">
+                                                            <i class="text-xl bi bi-chevron-up"></i>
+                                                        </div>
+                                                        <div @click="moveDown(menu, parent)"
+                                                            x-data="{ tooltip: 'Move down' }" x-tooltip="tooltip"
+                                                            class="flex items-center cursor-pointer justify-center w-9 h-9 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg toggle-full-view hover:bg-gray-100 hover:text-indigo-700 focus:z-10 focus:ring-2 focus:ring-gray-300 focus:outline-none">
+                                                            <i class="text-xl bi bi-chevron-down"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div x-show="menu.editing" style="display: none">
+                                                    <div class="flex items-center mt-2">
+                                                        <div class="flex items-center">
+                                                            <input @change="changeMenuTitle(menu, $event.target.value)"
+                                                                placeholder="Menu title" x-model="title"
+                                                                :value="menu.title" type="text"
+                                                                class="rounded flex-1 border border-stroke p-1 px-2 font-medium text-black bg-gray focus:border-primary focus-visible:outline-none block w-full">
+                                                            <select @change="changeMenuLink(menu, $event.target.value)"
+                                                                class="ms-2 rounded flex-1 border border-stroke p-1 px-2 font-medium text-black bg-gray focus:border-primary focus-visible:outline-none  block w-full"
+                                                                name="" id="">
+                                                                <option value="">Select an option</option>
+                                                                <template x-for="item in links">
+                                                                    <optgroup :label="item.title">
+                                                                        <template x-for="link in item.menus">
+                                                                            <option :selected="menu.link == link.link"
+                                                                                :value="link.link" x-text="link.title">
+                                                                            </option>
+                                                                        </template>
+                                                                    </optgroup>
+                                                                </template>
+                                                                <option :selected="menu.custom_link"
+                                                                    value="custom_link">
+                                                                    Custom link</option>
+                                                            </select>
+                                                            <input x-show="menu.custom_link"
+                                                                @change="changeMenuLink(menu, $event.target.value, true)"
+                                                                placeholder="Link" :value="menu.link" type="text"
+                                                                class="ms-2 flex-1 rounded border border-stroke p-1 px-2 font-medium text-black bg-gray focus:border-primary focus-visible:outline-none  block w-full">
+                                                        </div>
+                                                        <div @click="menu.editing = false"
+                                                            x-data="{ tooltip: 'Done editing' }" x-tooltip="tooltip"
+                                                            class="flex items-center cursor-pointer justify-center w-9 h-9 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg toggle-full-view hover:bg-gray-100 hover:text-indigo-700 focus:z-10 focus:ring-2 focus:ring-gray-300 focus:outline-none ms-2">
+                                                            <i class="text-xl bi bi-check"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div x-show="menu.childs.length" class="tree__children">
+                                                <template x-for="childNode in menu.childs" :key="childNode.key">
+                                                    <div class="px-8">
+                                                        <template x-template-outlet="$refs.treeNodeTemplate"
+                                                            x-data="{ menu: childNode, parent: menu }">
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <div class="flex">
+                                        <div @click="addNewMenu()" x-data="{ tooltip: 'Add new menu' }"
+                                            x-tooltip="tooltip"
+                                            class="flex items-center cursor-pointer justify-center w-11 h-11 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg toggle-full-view hover:bg-gray-100 hover:text-indigo-700 focus:z-10 focus:ring-2 focus:ring-gray-300 focus:outline-none me-2">
+                                            <i class="text-xl bi bi-plus"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+<script>
+    document.addEventListener(
+        "alpine:init",
+        function setupAlpineBindings() {
+
+            Alpine.directive("template-outlet", TemplateOutletDirective);
+
+        }
+    );
+    /**
+ * I clone and render the given source template.
+ */
+    function TemplateOutletDirective(element, metadata, framework) {
+
+        // Get the template reference that we want to clone and render.
+        var templateRef = framework.evaluate(metadata.expression);
+
+        // Clone the template and get the root node - this is the node that we will
+        // inject into the DOM.
+        var clone = templateRef.content
+            .cloneNode(true)
+            .firstElementChild;
+
+        // For the clone, all I need to do at the moment is copy the datastack from the
+        // template over to the clone. This way, even if the template doesn't have an "x-data"
+        // attribute, I'll still have the right stack.
+        clone._x_dataStack = Alpine.closestDataStack(element);
+
+        // Instead of leaving the template in the DOM, we're going to swap the
+        // template with a comment hook. This isn't necessary; but, I think it leaves
+        // the DOM more pleasant looking.
+        var domHook = document.createComment(
+            ` Template outlet hook (${metadata.expression}) with bindings (${element.getAttribute("x-data")}). `
+        );
+        domHook._template_outlet_ref = templateRef;
+        domHook._template_outlet_clone = clone;
+
+        // Swap the template-outlet element with the hook and clone.
+        // --
+        // NOTE: Doing this inside the mutateDom() method will pause Alpine's internal
+        // MutationObserver, which allows us to perform DOM manipulation without
+        // triggering actions in the framework. Then, we can call initTree() and
+        // destroyTree() to have explicitly setup and teardowm DOM node bindings.
+        Alpine.mutateDom(
+            function pauseMutationObserver() {
+
+                element.after(domHook);
+                domHook.after(clone);
+                Alpine.initTree(clone);
+
+                element.remove();
+                Alpine.destroyTree(element);
+
+            }
+        );
+
+    }
+    function menuComponent() {
+        return {
+            menus: [],
+            links: [],
+            addNewMenu(parent = null) {
+                parent ? parent.childs.push({
+                    title: 'New Menu',
+                    link: '#',
+                    key: Math.floor(100000 + Math.random() * 900000),
+                    childs: [],
+                    editing: false,
+                }) : this.menus.push({
+                    title: 'New Menu',
+                    link: '#',
+                    key: Math.floor(100000 + Math.random() * 900000),
+                    childs: [],
+                    editing: false,
+                });
+                this.updateMenus();
+            },
+            changeMenuTitle(menu, value) {
+                menu.title = value;
+                this.updateMenus();
+            },
+            changeMenuLink(menu, value, custom_link = false) {
+                menu.custom_link = value == 'custom_link' || custom_link;
+                menu.link = (value == 'custom_link' ? menu.link : value);
+                this.updateMenus();
+            },
+            deleteMenu(menu, parent = null) {
+                if (parent) {
+                    // If the menu has a parent, remove it from the parent's `childs` array
+                    const index = parent.childs.findIndex(child => child.key === menu.key);
+                    if (index !== -1) {
+                        parent.childs.splice(index, 1);
+                    }
+                } else {
+                    // If the menu doesn't have a parent, remove it from the `menus` array
+                    const index = this.menus.findIndex(m => m.key === menu.key);
+                    if (index !== -1) {
+                        this.menus.splice(index, 1);
+                    }
+                }
+                this.updateMenus();
+            },
+            moveUp(menu, parent = null) {
+                if (parent) {
+                    // Find the menu within the parent's `childs` array
+                    const index = parent.childs.findIndex(child => child.key === menu.key);
+                    if (index > 0) {
+                        // Swap with the previous menu
+                        [parent.childs[index - 1], parent.childs[index]] = [parent.childs[index], parent.childs[index -
+                            1]];
+                    }
+                } else {
+                    // Find the menu within the root `menus` array
+                    const index = this.menus.findIndex(m => m.key === menu.key);
+                    if (index > 0) {
+                        // Swap with the previous menu
+                        [this.menus[index - 1], this.menus[index]] = [this.menus[index], this.menus[index - 1]];
+                    }
+                }
+                this.updateMenus();
+            },
+
+            // Move item down by swapping with the next item
+            moveDown(menu, parent = null) {
+                if (parent) {
+                    // Find the menu within the parent's `childs` array
+                    const index = parent.childs.findIndex(child => child.key === menu.key);
+                    if (index < parent.childs.length - 1) {
+                        // Swap with the next menu
+                        [parent.childs[index], parent.childs[index + 1]] = [parent.childs[index + 1], parent.childs[
+                            index]];
+                    }
+                } else {
+                    // Find the menu within the root `menus` array
+                    const index = this.menus.findIndex(m => m.key === menu.key);
+                    if (index < this.menus.length - 1) {
+                        // Swap with the next menu
+                        [this.menus[index], this.menus[index + 1]] = [this.menus[index + 1], this.menus[index]];
+                    }
+                }
+                this.updateMenus();
+
+            },
+            updateMenus() {
+                console.log(JSON.stringify(this.menus));
+            }
+        };
+    }
+</script>
+
+</html>
