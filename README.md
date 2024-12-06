@@ -21,4 +21,4 @@ An interactive and customizable navigation menu builder powered by **Alpine.js**
 - **Interactive Icons**:
   - Use Bootstrap Icons for intuitive controls like add, edit, delete, and rearrange.
 
----
+<a href="https://alpine-menu-builder.vercel.app/">Live preview</a>
